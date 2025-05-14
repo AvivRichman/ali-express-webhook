@@ -81,9 +81,13 @@ def generate_short_affiliate_link(product_url: str) -> str:
 
 @app.route("/run", methods=["POST"])
 def run_affiliate_process():
+    print("✅ התחיל תהליך /run")
     try:
-        print("📩 בקשה התקבלה מ-Make")
-        content = request.get_json()
+        if not request.is_json:
+            print("❌ הבקשה אינה JSON חוקי")
+            return jsonify({"error": "Request must be JSON"}), 400
+
+        content = request.get_json(force=True)
         print("📦 תוכן הבקשה:", content)
 
         product_id = content.get("product_id")
