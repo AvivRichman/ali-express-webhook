@@ -93,7 +93,7 @@ def generate_short_affiliate_link(product_url: str) -> str:
     try:
         return data["aliexpress_affiliate_link_generate_response"]["resp_result"]["result"]["promotion_links"][0]["short_link_url"]
     except Exception as e:
-        return "❌ קישור שותף לא נוצר"
+        return "❌ קישור שותף לא נוצר", product_url, product_id
 
 
 if __name__ == "__main__":
