@@ -78,7 +78,7 @@ def generate_short_affiliate_link(promotion_link: str) -> str:
     response = requests.get(ENDPOINT, params=params, timeout=30)
     response.raise_for_status()
     data = response.json()
-
+    print(data)
     try:
         return data["aliexpress_affiliate_link_generate_response"]["resp_result"]["result"]["promotion_links"][0]["short_link_url"]
     except Exception as e:
