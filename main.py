@@ -49,17 +49,24 @@ def generate_short_affiliate_link(product_url: str) -> str:
     extra = {
         "source_values": product_url,
         "tracking_id": TRACKING_ID,
-        "promotion_link_type": "0",  # ✅ חובה לפי API
+        "promotion_link_type": "0",  # נדרש לפי API
     }
     params = build_params(method, extra)
     params["sign"] = compute_sign(params)
+
+    print(f"\n🔗 יוצרים קישור שותף למוצר: {product_url}")
+    print("📤 בקשה ל-API:", params)
+
     response = requests.get(ENDPOINT, params=params, timeout=30)
     response.raise_for_status()
     data = response.json()
+
+    print("📥 תגובת API:", data)
+
     try:
         return data["aliexpress_affiliate_link_generate_response"]["resp_result"]["result"]["promotion_links"][0]["short_link_url"]
     except Exception as e:
-        print("❌ קישור שותף לא נוצר:", e)
+        print("❌ שגיאה בהפקת קישור:", e)
         return None
 
 
