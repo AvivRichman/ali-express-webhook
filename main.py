@@ -17,9 +17,9 @@ import threading
 APP_KEY     = "514792"
 APP_SECRET  = "EFUG78khiSae7fPhQo5H0KB0uiJMlXTc"
 ACCESS_TOKEN = ""          # השאר ריק אם לא חובה בחשבונך
-PRODUCT_IDS = "3256807779564847"   # פסיק בין IDs מרובים
-COUNTRY     = "ISRAEL"
-TARGET_CURR = "USD"
+PRODUCT_IDS = "1005005275950625"   # פסיק בין IDs מרובים
+COUNTRY     = "IL"
+TARGET_CURR = "ILS"
 TARGET_LANG = "EN"
 TRACKING_ID = "default"
 # ------------------------------------------------------------------
