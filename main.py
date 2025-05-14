@@ -1,17 +1,12 @@
 #!/usr/bin/env python3
-"""
-AliExpress Affiliate – productdetail.get + short link generation (with Google Sheets)
-"""
 
 import time
 import hmac
 import hashlib
 import requests
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
+from flask import Flask, request, jsonify
 
-# ------------------------------------------------------------------
-# ▶️ CONFIG –– החלף בערכים שלך
+# === CONFIG ===
 APP_KEY     = "514792"
 APP_SECRET  = "EFUG78khiSae7fPhQo5H0KB0uiJMlXTc"
 ACCESS_TOKEN = ""
@@ -20,18 +15,10 @@ TARGET_CURR  = "ILS"
 TARGET_LANG  = "EN"
 TRACKING_ID  = "default"
 ENDPOINT     = "https://api-sg.aliexpress.com/sync"
-SHEET_URL    = "https://docs.google.com/spreadsheets/d/17M0s9gbjR9XlHWuUe0lpQxYsrF4rhM2ej-mMU8oCDFQ/edit"
-CREDENTIALS_PATH = "/etc/secrets/service_account.json"  # נתיב ל־Render
-# ------------------------------------------------------------------
+RESULT_WEBHOOK = "https://hook.make.com/abc123xyz..."  # ← הדבק כאן את הקולט שלך
+# ==============
 
-
-def get_product_ids_from_sheet(sheet_url: str, credentials_path: str) -> list:
-    scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-    creds = ServiceAccountCredentials.from_json_keyfile_name(credentials_path, scope)
-    client = gspread.authorize(creds)
-    sheet = client.open_by_url(sheet_url).sheet1
-    ids = sheet.col_values(1)
-    return [pid.strip() for pid in ids if pid.strip().isdigit()]
+app = Flask(__name__)
 
 
 def build_params(method: str, extra_params: dict = {}) -> dict:
@@ -83,32 +70,40 @@ def generate_short_affiliate_link(product_url: str) -> str:
     }
     params = build_params(method, extra)
     params["sign"] = compute_sign(params)
-
     response = requests.get(ENDPOINT, params=params, timeout=30)
     response.raise_for_status()
     data = response.json()
-
-    print(data)
-
     try:
-        return "111", response.json()
+        return data["aliexpress_affiliate_link_generate_response"]["resp_result"]["result"]["promotion_links"][0]["short_link_url"]
+    except Exception:
+        return None
+
+
+@app.route("/run", methods=["POST"])
+def run_affiliate_process():
+    try:
+        content = request.get_json()
+        product_id = content.get("product_id")
+        if not product_id:
+            return jsonify({"error": "Missing product_id"}), 400
+
+        product_url = f"https://www.aliexpress.com/item/{product_id}.html"
+        detail_data = call_productdetail_api(product_id)
+        short_link = generate_short_affiliate_link(product_url)
+
+        payload = {
+            "product_id": product_id,
+            "short_link": short_link,
+            "product_url": product_url,
+            "details": detail_data
+        }
+
+        requests.post(RESULT_WEBHOOK, json=payload)
+        return jsonify({"status": "processed", "product_id": product_id}), 200
+
     except Exception as e:
-        return response.json()
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == "__main__":
-    try:
-        product_ids = get_product_ids_from_sheet(SHEET_URL, CREDENTIALS_PATH)
-        for pid in product_ids:
-            PRODUCT_ID = pid
-            data = call_productdetail_api(PRODUCT_ID)
-            print(f"\n🔎 תוצאת API עבור מוצר {PRODUCT_ID}:\n", data)
-
-            product_url = f"https://www.aliexpress.com/item/{PRODUCT_ID}.html"
-            short_link = generate_short_affiliate_link(product_url)
-            print(f"🔗 קישור מקוצר למוצר {PRODUCT_ID}:", short_link)
-
-    except requests.HTTPError as e:
-        print("HTTP error:", e.response.status_code, e.response.text)
-    except Exception as exc:
-        print("Error:", exc)
+    app.run(host="0.0.0.0", port=3000)
