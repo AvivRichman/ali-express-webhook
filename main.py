@@ -79,7 +79,7 @@ def generate_short_affiliate_link(product_url: str) -> str:
         return "111"
 
 
-@app.route("POST /run HTTP/1.1", methods=["POST"])
+@app.route("/POST /run HTTP/1.1", methods=["POST"])
 def run_affiliate_process():
     try:
         print("📩 בקשה התקבלה מ-Make")
