@@ -82,14 +82,23 @@ def generate_short_affiliate_link(product_url: str) -> str:
 @app.route("/run", methods=["POST"])
 def run_affiliate_process():
     try:
+        print("📩 בקשה התקבלה מ-Make")
         content = request.get_json()
+        print("📦 תוכן הבקשה:", content)
+
         product_id = content.get("product_id")
         if not product_id:
+            print("❌ חסר product_id")
             return jsonify({"error": "Missing product_id"}), 400
 
         product_url = f"https://www.aliexpress.com/item/{product_id}.html"
+        print("🔗 URL:", product_url)
+
         detail_data = call_productdetail_api(product_id)
+        print("🔍 פרטי מוצר הוחזרו")
+
         short_link = generate_short_affiliate_link(product_url)
+        print("🔗 קישור שותף נוצר:", short_link)
 
         payload = {
             "product_id": product_id,
@@ -98,10 +107,14 @@ def run_affiliate_process():
             "details": detail_data
         }
 
-        requests.post(RESULT_WEBHOOK, json=payload)
+        print("📤 שולח את הנתונים ל-Make...")
+        response = requests.post(RESULT_WEBHOOK, json=payload)
+        print("✅ נשלח ל-Make:", response.status_code)
+
         return jsonify({"status": "processed", "product_id": product_id}), 200
 
     except Exception as e:
+        print("❌ שגיאה בשרת:", e)
         return jsonify({"error": str(e)}), 500
 
 
