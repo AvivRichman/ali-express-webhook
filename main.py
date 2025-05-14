@@ -74,9 +74,9 @@ def generate_short_affiliate_link(product_url: str) -> str:
     response.raise_for_status()
     data = response.json()
     try:
-        return "222", data
+        return data
     except Exception:
-        return "111"
+        return "error at generate affiliate link"
 
 
 @app.route("/run", methods=["POST"])
