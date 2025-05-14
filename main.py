@@ -1,29 +1,23 @@
 #!/usr/bin/env python3
-"""
-AliExpress Affiliate – productdetail.get + short link generation
-"""
 
 import time
 import hmac
 import hashlib
 import requests
-from urllib.parse import urlencode
-from flask import Flask
-import threading
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
 
-# ------------------------------------------------------------------
-# ▶️ CONFIG –– החלף בערכים שלך
-APP_KEY      = "514792"
-APP_SECRET   = "EFUG78khiSae7fPhQo5H0KB0uiJMlXTc"
-ACCESS_TOKEN = ""  # השאר ריק אם לא חובה
-PRODUCT_IDS  = "1005005275950625"
-COUNTRY      = "IL"
-TARGET_CURR  = "ILS"
-TARGET_LANG  = "EN"
+# === CONFIGURATION ===
+APP_KEY     = "514792"
+APP_SECRET  = "EFUG78khiSae7fPhQo5H0KB0uiJMlXTc"
+ACCESS_TOKEN = ""
 TRACKING_ID  = "default"
 ENDPOINT     = "https://api-sg.aliexpress.com/sync"
+
+SHEET_URL   = "https://docs.google.com/spreadsheets/d/17M0s9gbjR9XlHWuUe0lpQxYsrF4rhM2ej-mMU8oCDFQ/edit"
+CREDENTIALS_PATH = "/etc/secrets/service_account.json"  # ✅ נתיב מותאם ל־Render
 MAKE_WEBHOOK = "https://hook.eu2.make.com/rysnctcvstd08ar6b0a4hcagsihwpw9a"
-# ------------------------------------------------------------------
+# ======================
 
 
 def build_params(method: str, extra_params: dict = {}) -> dict:
@@ -50,27 +44,12 @@ def compute_sign(params: dict) -> str:
     return digest
 
 
-def call_productdetail_api() -> dict:
-    method = "aliexpress.affiliate.productdetail.get"
-    extra = {
-        "product_ids": PRODUCT_IDS,
-        "country": COUNTRY,
-        "target_currency": TARGET_CURR,
-        "target_language": TARGET_LANG,
-        "tracking_id": TRACKING_ID,
-    }
-    params = build_params(method, extra)
-    params["sign"] = compute_sign(params)
-    response = requests.get(ENDPOINT, params=params, timeout=30)
-    response.raise_for_status()
-    return response.json()
-
-
 def generate_short_affiliate_link(product_url: str) -> str:
     method = "aliexpress.affiliate.link.generate"
     extra = {
         "source_values": product_url,
         "tracking_id": TRACKING_ID,
+        "promotion_link_type": "0",  # ✅ חובה לפי API
     }
     params = build_params(method, extra)
     params["sign"] = compute_sign(params)
@@ -79,47 +58,48 @@ def generate_short_affiliate_link(product_url: str) -> str:
     data = response.json()
     try:
         return data["aliexpress_affiliate_link_generate_response"]["resp_result"]["result"]["promotion_links"][0]["short_link_url"]
-    except Exception:
-        return "❌ קישור שותף לא נוצר"
+    except Exception as e:
+        print("❌ קישור שותף לא נוצר:", e)
+        return None
+
+
+def get_product_ids_from_sheet(sheet_url: str, credentials_path: str) -> list:
+    scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+    creds = ServiceAccountCredentials.from_json_keyfile_name(credentials_path, scope)
+    client = gspread.authorize(creds)
+    sheet = client.open_by_url(sheet_url).sheet1
+    ids = sheet.col_values(1)
+    return [pid.strip() for pid in ids if pid.strip().isdigit()]
 
 
 def send_to_make(payload: dict):
     try:
         r = requests.post(MAKE_WEBHOOK, json=payload)
         r.raise_for_status()
-        print("✅ Data sent to Make successfully")
+        print("✅ נשלח ל-Make:", payload)
     except Exception as e:
-        print("❌ Failed to send to Make:", str(e))
+        print("❌ שגיאה בשליחה ל-Make:", e)
 
 
-# === MAIN EXECUTION FUNCTION ===
-def main_process():
-    data = call_productdetail_api()
+def main():
+    product_ids = get_product_ids_from_sheet(SHEET_URL, CREDENTIALS_PATH)
+    print(f"📦 נמצאו {len(product_ids)} מזהים")
 
-    # שלוף URL מוצר + צור קישור שותף קצר
-    try:
-        product_url = data["aliexpress_affiliate_productdetail_get_response"]["result"]["products"][0]["product_url"]
+    for pid in product_ids:
+        product_url = f"https://www.aliexpress.com/item/{pid}.html"
         short_link = generate_short_affiliate_link(product_url)
-        data["short_affiliate_link"] = short_link
-    except Exception as e:
-        data["short_affiliate_link"] = f"❌ לא נוצר קישור ({e})"
 
-    send_to_make(data)
+        if short_link:
+            payload = {
+                "product_id": pid,
+                "short_link": short_link
+            }
+            send_to_make(payload)
+        else:
+            print(f"⚠️ לא נוצר קישור למוצר {pid}")
 
+    print("🎉 הסתיים התהליך בהצלחה.")
 
-# === FOR LOCAL AND WEB RUNNING ===
-app = Flask(__name__)
-
-@app.route("/")
-def run_script():
-    try:
-        main_process()
-        return "✅ Success – Data sent to Make", 200
-    except Exception as e:
-        return f"❌ Error: {str(e)}", 500
-
-def run_flask():
-    app.run(host="0.0.0.0", port=3000)
 
 if __name__ == "__main__":
-    threading.Thread(target=run_flask).start()
+    main()
