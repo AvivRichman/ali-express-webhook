@@ -76,7 +76,7 @@ def generate_short_affiliate_link(product_url: str) -> str:
     try:
         return data["aliexpress_affiliate_link_generate_response"]["resp_result"]["result"]["promotion_links"][0]["short_link_url"]
     except Exception:
-        return None
+        return data
 
 
 @app.route("/run", methods=["POST"])
