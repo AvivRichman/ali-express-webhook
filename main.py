@@ -74,9 +74,9 @@ def generate_short_affiliate_link(product_url: str) -> str:
     response.raise_for_status()
     data = response.json()
     try:
-        return data["aliexpress_affiliate_link_generate_response"]["resp_result"]["result"]["promotion_links"][0]["short_link_url"]
+        return "222", data["aliexpress_affiliate_link_generate_response"]["resp_result"]["result"]["promotion_links"][0]["short_link_url"]
     except Exception:
-        return data
+        return "111"
 
 
 @app.route("/run", methods=["POST"])
