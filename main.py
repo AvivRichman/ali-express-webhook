@@ -97,7 +97,7 @@ def run_script():
     try:
         data = call_api()
         send_to_make(data)
-        return "✅ Success", 200
+        return "✅ Success – Data sent to Make", 200
     except Exception as e:
         return f"❌ Error: {str(e)}", 500
 
