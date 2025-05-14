@@ -15,7 +15,7 @@ TARGET_CURR  = "ILS"
 TARGET_LANG  = "EN"
 TRACKING_ID  = "default"
 ENDPOINT     = "https://api-sg.aliexpress.com/sync"
-RESULT_WEBHOOK = "https://hook.make.com/abc123xyz..."  # ← הדבק כאן את הקולט שלך
+RESULT_WEBHOOK = "https://hook.eu2.make.com/rysnctcvstd08ar6b0a4hcagsihwpw9a"  # ← הדבק כאן את הקולט שלך
 # ==============
 
 app = Flask(__name__)
