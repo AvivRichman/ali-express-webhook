@@ -115,7 +115,7 @@ def run_affiliate_process():
         return jsonify({"error": str(e)}), 500
 
 @app.route("/run_telegram", methods=["POST"])
-def run_affiliate_process():
+def run_affiliate_process_telegram():
     try:
         if not request.is_json:
             return jsonify({"error": "Request must be JSON"}), 400
@@ -139,7 +139,7 @@ def run_affiliate_process():
             "details": detail_data
         }
 
-        response = requests.post(RESULT_WEBHOOK_TELEGRAM, json=payload)
+        response = requests.post(os.getenv("RESULT_WEBHOOK_TELEGRAM"), json=payload)
 
         return jsonify({"status": "processed", "product_id": product_id}), 200
 
