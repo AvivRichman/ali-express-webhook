@@ -17,6 +17,7 @@ TARGET_LANG  = "EN"
 TRACKING_ID  = "default"
 ENDPOINT     = "https://api-sg.aliexpress.com/sync"
 RESULT_WEBHOOK_WHATSAPP = os.getenv("RESULT_WEBHOOK_WHATSAPP")
+RESULT_WEBHOOK_TELEGRAM = os.getenv("RESULT_WEBHOOK_TELEGRAM")
 # ==============
 
 app = Flask(__name__)
@@ -113,6 +114,38 @@ def run_affiliate_process():
         print("❌ שגיאה בשרת:", e)
         return jsonify({"error": str(e)}), 500
 
+@app.route("/run_telegram", methods=["POST"])
+def run_affiliate_process():
+    try:
+        if not request.is_json:
+            return jsonify({"error": "Request must be JSON"}), 400
+
+        content = request.get_json(force=True)
+
+        product_id = content.get("product_id")
+        if not product_id:
+            return jsonify({"error": "Missing product_id"}), 400
+
+        product_url = f"https://www.aliexpress.com/item/{product_id}.html"
+
+        detail_data = call_productdetail_api(product_id)
+
+        short_link = generate_short_affiliate_link(product_url)
+
+        payload = {
+            "product_id": product_id,
+            "short_link": short_link,
+            "product_url": product_url,
+            "details": detail_data
+        }
+
+        response = requests.post(RESULT_WEBHOOK_TELEGRAM, json=payload)
+
+        return jsonify({"status": "processed", "product_id": product_id}), 200
+
+    except Exception as e:
+        print("❌ שגיאה בשרת:", e)
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=3000)
