@@ -1,21 +1,22 @@
 #!/usr/bin/env python3
 
 import time
+import os
 import hmac
 import hashlib
 import requests
 from flask import Flask, request, jsonify
 
 # === CONFIG ===
-APP_KEY     = "514792"
-APP_SECRET  = "EFUG78khiSae7fPhQo5H0KB0uiJMlXTc"
+APP_KEY     = os.getenv("APP_KEY")
+APP_SECRET  = os.getenv("APP_SECRET")
 ACCESS_TOKEN = ""
 COUNTRY      = "IL"
 TARGET_CURR  = "ILS"
 TARGET_LANG  = "EN"
 TRACKING_ID  = "default"
 ENDPOINT     = "https://api-sg.aliexpress.com/sync"
-RESULT_WEBHOOK = "https://hook.eu2.make.com/rysnctcvstd08ar6b0a4hcagsihwpw9a"  # ← הדבק כאן את הקולט שלך
+RESULT_WEBHOOK_WHATSAPP = os.getenv("RESULT_WEBHOOK_WHATSAPP")
 # ==============
 
 app = Flask(__name__)
@@ -81,28 +82,21 @@ def generate_short_affiliate_link(product_url: str) -> str:
 
 @app.route("/run", methods=["POST"])
 def run_affiliate_process():
-    print("✅ התחיל תהליך /run")
     try:
         if not request.is_json:
-            print("❌ הבקשה אינה JSON חוקי")
             return jsonify({"error": "Request must be JSON"}), 400
 
         content = request.get_json(force=True)
-        print("📦 תוכן הבקשה:", content)
 
         product_id = content.get("product_id")
         if not product_id:
-            print("❌ חסר product_id")
             return jsonify({"error": "Missing product_id"}), 400
 
         product_url = f"https://www.aliexpress.com/item/{product_id}.html"
-        print("🔗 URL:", product_url)
 
         detail_data = call_productdetail_api(product_id)
-        print("🔍 פרטי מוצר הוחזרו")
 
         short_link = generate_short_affiliate_link(product_url)
-        print("🔗 קישור שותף נוצר:", short_link)
 
         payload = {
             "product_id": product_id,
@@ -111,9 +105,7 @@ def run_affiliate_process():
             "details": detail_data
         }
 
-        print("📤 שולח את הנתונים ל-Make...")
-        response = requests.post(RESULT_WEBHOOK, json=payload)
-        print("✅ נשלח ל-Make:", response.status_code)
+        response = requests.post(RESULT_WEBHOOK_WHATSAPP, json=payload)
 
         return jsonify({"status": "processed", "product_id": product_id}), 200
 
