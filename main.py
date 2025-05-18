@@ -80,7 +80,7 @@ def generate_short_affiliate_link(product_url: str) -> str:
         return "error at generate affiliate link"
 
 
-@app.route("/run", methods=["POST"])
+@app.route("/run_whatsapp", methods=["POST"])
 def run_affiliate_process():
     try:
         if not request.is_json:
