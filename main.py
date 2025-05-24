@@ -150,29 +150,21 @@ def run_affiliate_process():
 def send_hot_product():
     try:
         product = get_hot_product()
-        return product
+        
         if not product:
             return jsonify({"error": "No hot products found"}), 404
 
-        product_url = product.get("product_detail_url")
+        #product_url = product.get("product_detail_url")
 
-        short_link = generate_short_affiliate_link(product_url)
+        #short_link = generate_short_affiliate_link(product_url)
 
         payload = {
-            "product_id": product.get("product_id"),
-            "short_link": short_link,
-            "product_url": product_url,
-            "title": product.get("product_title"),
-            "price": product.get("app_sale_price"),
-            "original_price": product.get("original_price"),
-            "image_url": product.get("product_main_image_url"),
-            "shop_name": product.get("shop_name"),
-            "commission_rate": product.get("hot_product_commission_rate"),
+            "details": detail_data
         }
 
         response = requests.post(RESULT_WEBHOOK_TELEGRAM, json=payload)
 
-        return jsonify({"status": "sent", "product_id": product.get("product_id")}), 200
+        return jsonify({"status": "sent", "product_id": "11111"}), 200
 
     except Exception as e:
         print("❌ שגיאה במשלוח מוצר חם:", e)
