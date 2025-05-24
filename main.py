@@ -62,6 +62,24 @@ def call_productdetail_api(product_id: str) -> dict:
     response.raise_for_status()
     return response.json()
 
+def get_hot_product():
+    method = "aliexpress.affiliate.hotproduct.query"
+    extra = {
+        "page_no": 1,
+        "page_size": 1,  # מוצר אחד בלבד
+        "target_currency": TARGET_CURR,
+        "target_language": TARGET_LANG,
+        "tracking_id": TRACKING_ID,
+        "ship_to_country": COUNTRY,
+        "sort": "LAST_VOLUME_DESC",  # הכי נמכר
+    }
+
+    params = build_params(method, extra)
+    params["sign"] = compute_sign(params)
+    response = requests.get(ENDPOINT, params=params, timeout=30)
+    response.raise_for_status()
+    return response.json()
+
 
 def generate_short_affiliate_link(product_url: str) -> str:
     method = "aliexpress.affiliate.link.generate"
@@ -113,6 +131,38 @@ def run_affiliate_process():
     except Exception as e:
         print("❌ שגיאה בשרת:", e)
         return jsonify({"error": str(e)}), 500
+
+@app.route("/send_hot_product", methods=["POST"])
+def send_hot_product():
+    try:
+        data = get_hot_product()
+        product_list = data.get("resp_result", {}).get("result", {}).get("products", [])
+
+        if not product_list:
+            return jsonify({"error": "No hot products found"}), 404
+
+        product = product_list[0]  # ניקח את הראשון
+        product_id = product.get("product_id")
+        product_url = product.get("product_url")
+
+        # ניצור קישור שותף קצר
+        short_link = generate_short_affiliate_link(product_url)
+
+        payload = {
+            "product_id": product_id,
+            "short_link": short_link,
+            "product_url": product_url,
+            "details": product
+        }
+
+        response = requests.post(RESULT_WEBHOOK_TELEGRAM, json=payload)
+
+        return jsonify({"status": "sent", "product_id": product_id}), 200
+
+    except Exception as e:
+        print("❌ שגיאה במשלוח מוצר חם:", e)
+        return jsonify({"error": str(e)}), 500
+
 
 @app.route("/run_telegram", methods=["POST"])
 def run_affiliate_process_telegram():
