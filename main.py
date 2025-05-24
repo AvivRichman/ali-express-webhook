@@ -85,15 +85,13 @@ def get_hot_product():
     response.raise_for_status()
     data = response.json()
 
-    # 🧪 להדפיס פעם אחת את המידע כדי לבדוק
-    print("🔍 Response from Hot Product API:", data)
 
     # נוודא שהפורמט תואם ונחזיר מוצר ראשון
     products = data.get("resp_result", {}).get("result", {}).get("products", [])
     if not products:
         return None
 
-    return products[0]
+    return data
 
 
 
