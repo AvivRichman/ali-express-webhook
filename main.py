@@ -66,16 +66,16 @@ def get_hot_product():
     method = "aliexpress.affiliate.hotproduct.query"
     extra = {
         "page_no": 1,
-        "page_size": 1,
-        "category_ids": "1420",             # הקטגוריה שביקשת
-        "min_sale_price": 75,             # 75 דולר (סנט)
-        "max_sale_price": 200,            # 200 דולר (סנט)
+        "page_size": 50,
+        # "category_ids": "1420",             # הקטגוריה שביקשת
+        # "min_sale_price": 75,             # 75 דולר (סנט)
+        # "max_sale_price": 200,            # 200 דולר (סנט)
         "target_currency": TARGET_CURR,
         "target_language": TARGET_LANG,
         "tracking_id": TRACKING_ID,
         "ship_to_country": COUNTRY,
         "sort": "LAST_VOLUME_DESC",
-        "fields": "product_id,product_title,product_detail_url,product_main_image_url,app_sale_price,original_price,hot_product_commission_rate,shop_id,shop_name,sale_price,product_small_image_urls"
+        # "fields": "product_id,product_title,product_detail_url,product_main_image_url,app_sale_price,original_price,hot_product_commission_rate,shop_id,shop_name,sale_price,product_small_image_urls"
     }
 
     params = build_params(method, extra)
