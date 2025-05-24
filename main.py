@@ -138,6 +138,9 @@ def send_hot_product():
         data = get_hot_product()
         product_list = data.get("resp_result", {}).get("result", {}).get("products", [])
 
+        if not product_list:
+            return jsonify({"error": "No hot products found"}), 404
+
         product = product_list[0]  # ניקח את הראשון
         product_id = product.get("product_id")
         product_url = product.get("product_url")
