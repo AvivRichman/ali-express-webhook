@@ -66,19 +66,35 @@ def get_hot_product():
     method = "aliexpress.affiliate.hotproduct.query"
     extra = {
         "page_no": 1,
-        "page_size": 1,  # מוצר אחד בלבד
+        "page_size": 1,
+        "category_ids": "1420",             # הקטגוריה שביקשת
+        "min_sale_price": 75,             # 75 דולר (סנט)
+        "max_sale_price": 200,            # 200 דולר (סנט)
         "target_currency": TARGET_CURR,
         "target_language": TARGET_LANG,
         "tracking_id": TRACKING_ID,
         "ship_to_country": COUNTRY,
-        "sort": "LAST_VOLUME_DESC",  # הכי נמכר
+        "sort": "LAST_VOLUME_DESC",
+        "fields": "product_id,product_title,product_detail_url,product_main_image_url,app_sale_price,original_price,hot_product_commission_rate,shop_id,shop_name,sale_price,product_small_image_urls"
     }
 
     params = build_params(method, extra)
     params["sign"] = compute_sign(params)
+
     response = requests.get(ENDPOINT, params=params, timeout=30)
     response.raise_for_status()
-    return response.json()
+    data = response.json()
+
+    # 🧪 להדפיס פעם אחת את המידע כדי לבדוק
+    print("🔍 Response from Hot Product API:", data)
+
+    # נוודא שהפורמט תואם ונחזיר מוצר ראשון
+    products = data.get("resp_result", {}).get("result", {}).get("products", [])
+    if not products:
+        return None
+
+    return products[0]
+
 
 
 def generate_short_affiliate_link(product_url: str) -> str:
@@ -135,33 +151,34 @@ def run_affiliate_process():
 @app.route("/send_hot_product", methods=["POST"])
 def send_hot_product():
     try:
-        data = get_hot_product()
-        product_list = data.get("resp_result", {}).get("result", {}).get("products", [])
-
-        if not product_list:
+        product = get_hot_product()
+        if not product:
             return jsonify({"error": "No hot products found"}), 404
 
-        product = product_list[0]  # ניקח את הראשון
-        product_id = product.get("product_id")
-        product_url = product.get("product_url")
+        product_url = product.get("product_detail_url")
 
-        # ניצור קישור שותף קצר
         short_link = generate_short_affiliate_link(product_url)
 
         payload = {
-            "product_id": product_id,
+            "product_id": product.get("product_id"),
             "short_link": short_link,
             "product_url": product_url,
-            "details": product
+            "title": product.get("product_title"),
+            "price": product.get("app_sale_price"),
+            "original_price": product.get("original_price"),
+            "image_url": product.get("product_main_image_url"),
+            "shop_name": product.get("shop_name"),
+            "commission_rate": product.get("hot_product_commission_rate"),
         }
 
         response = requests.post(RESULT_WEBHOOK_TELEGRAM, json=payload)
 
-        return jsonify({"status": "sent", "product_id": product_id}), 200
+        return jsonify({"status": "sent", "product_id": product.get("product_id")}), 200
 
     except Exception as e:
         print("❌ שגיאה במשלוח מוצר חם:", e)
         return jsonify({"error": str(e)}), 500
+
 
 
 @app.route("/run_telegram", methods=["POST"])
