@@ -137,7 +137,9 @@ def send_hot_product():
     try:
         data = get_hot_product()
         product_list = data.get("resp_result", {}).get("result", {}).get("products", [])
-
+        
+        return data, product_list
+        
         if not product_list:
             return jsonify({"error": "No hot products found"}), 404
 
