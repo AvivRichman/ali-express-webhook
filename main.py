@@ -150,6 +150,7 @@ def run_affiliate_process():
 def send_hot_product():
     try:
         product = get_hot_product()
+        return product
         if not product:
             return jsonify({"error": "No hot products found"}), 404
 
